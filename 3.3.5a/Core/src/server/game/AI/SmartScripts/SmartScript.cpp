@@ -367,12 +367,14 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
             {
                 if (IsPlayer(*itr))
+                {
                     if (Quest const* q = sObjectMgr->GetQuestTemplate(e.action.quest.quest))
                     {
-                        (*itr)->ToPlayer()->AddQuest(q, NULL);
+                        (*itr)->ToPlayer()->AddQuestAndCheckCompletion(q, NULL);
                         TC_LOG_DEBUG("scripts.ai", "SmartScript::ProcessAction:: SMART_ACTION_ADD_QUEST: Player guidLow %u add quest %u",
                             (*itr)->GetGUIDLow(), e.action.quest.quest);
                     }
+                }
             }
 
             delete targets;
@@ -380,12 +382,19 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
         }
         case SMART_ACTION_SET_REACT_STATE:
         {
-            if (!me)
+            ObjectList* targets = GetTargets(e, unit);
+            if (!targets)
                 break;
 
-            me->SetReactState(ReactStates(e.action.react.state));
-            TC_LOG_DEBUG("scripts.ai", "SmartScript::ProcessAction:: SMART_ACTION_SET_REACT_STATE: Creature guidLow %u set reactstate %u",
-                me->GetGUIDLow(), e.action.react.state);
+            for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
+            {
+                if (!IsCreature(*itr))
+                    continue;
+
+                (*itr)->ToCreature()->SetReactState(ReactStates(e.action.react.state));
+            }
+
+            delete targets;
             break;
         }
         case SMART_ACTION_RANDOM_EMOTE:
@@ -525,9 +534,9 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(e.action.cast.spell);
                         int32 mana = me->GetPower(POWER_MANA);
 
-                        if (me->GetDistance((*itr)->ToUnit()) > spellInfo->GetMaxRange(true) ||
-                            me->GetDistance((*itr)->ToUnit()) < spellInfo->GetMinRange(true) ||
-                            !me->ToUnit()->IsWithinLOSInMap((*itr)->ToUnit()) ||
+                        if (me->GetDistance(*itr) > spellInfo->GetMaxRange(true) ||
+                            me->GetDistance(*itr) < spellInfo->GetMinRange(true) ||
+                            !me->IsWithinLOSInMap(*itr) ||
                             mana < spellInfo->CalcPowerCost(me, spellInfo->GetSchoolMask()))
                                 _allowMove = true;
 
@@ -825,7 +834,10 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
 
             ObjectList* targets = GetTargets(e, unit);
             if (!targets)
+            {
+                CAST_AI(SmartAI, me->AI())->StopFollow();
                 break;
+            }
 
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
             {
@@ -973,12 +985,16 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
         }
         case SMART_ACTION_UPDATE_TEMPLATE:
         {
-            if (!me || me->GetEntry() == e.action.updateTemplate.creature)
+            ObjectList* targets = GetTargets(e, unit);
+
+            if (!targets)
                 break;
 
-            me->UpdateEntry(e.action.updateTemplate.creature, e.action.updateTemplate.team ? HORDE : ALLIANCE);
-            TC_LOG_DEBUG("scripts.ai", "SmartScript::ProcessAction: SMART_ACTION_UPDATE_TEMPLATE: Creature %u, Template: %u, Team: %u",
-                me->GetGUIDLow(), me->GetEntry(), e.action.updateTemplate.team ? HORDE : ALLIANCE);
+            for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
+                if (IsCreature(*itr))
+                    (*itr)->ToCreature()->UpdateEntry(e.action.updateTemplate.creature, e.action.updateTemplate.team ? HORDE : ALLIANCE);
+
+            delete targets;
             break;
         }
         case SMART_ACTION_DIE:
@@ -1025,25 +1041,44 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
         }
         case SMART_ACTION_FORCE_DESPAWN:
         {
-            if (!IsSmart())
+            ObjectList* targets = GetTargets(e, unit);
+
+            if (!targets)
                 break;
 
-            // The AI is only updated if the creature is alive
-            if (me->IsAlive())
+            for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
             {
-                CAST_AI(SmartAI, me->AI())->SetDespawnTime(e.action.forceDespawn.delay + 1); // Next tick
-                CAST_AI(SmartAI, me->AI())->StartDespawn();
-            }
-            // Otherwise we call the despawn directly
-            else
-                me->DespawnOrUnsummon(e.action.forceDespawn.delay);
+                if (!IsCreature(*itr))
+                    continue;
 
+                if ((*itr)->ToUnit()->IsAlive() && IsSmart((*itr)->ToCreature()))
+                {
+                    CAST_AI(SmartAI, (*itr)->ToCreature()->AI())->SetDespawnTime(e.action.forceDespawn.delay + 1); // Next tick
+                    CAST_AI(SmartAI, (*itr)->ToCreature()->AI())->StartDespawn();
+                }
+                else
+                    (*itr)->ToCreature()->DespawnOrUnsummon(e.action.forceDespawn.delay);
+            }
+
+            delete targets;
             break;
         }
         case SMART_ACTION_SET_INGAME_PHASE_MASK:
         {
-            if (GetBaseObject())
-                GetBaseObject()->SetPhaseMask(e.action.ingamePhaseMask.mask, true);
+            ObjectList* targets = GetTargets(e, unit);
+
+            if (!targets)
+                break;
+
+            for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
+            {
+                if (IsUnit(*itr))
+                    (*itr)->ToUnit()->SetPhaseMask(e.action.ingamePhaseMask.mask, true);
+                else if (IsGameObject(*itr))
+                    (*itr)->ToGameObject()->SetPhaseMask(e.action.ingamePhaseMask.mask, true);
+            }
+
+            delete targets;
             break;
         }
         case SMART_ACTION_MOUNT_TO_ENTRY_OR_MODEL:
@@ -1088,6 +1123,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 ai->SetInvincibilityHpLevel(me->CountPctFromMaxHealth(e.action.invincHP.percent));
             else
                 ai->SetInvincibilityHpLevel(e.action.invincHP.minHP);
+
             break;
         }
         case SMART_ACTION_SET_DATA:
@@ -1127,6 +1163,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
         {
             if (WorldObject* baseObj = GetBaseObject())
                 baseObj->setActive(e.action.active.state);
+
             break;
         }
         case SMART_ACTION_ATTACK_START:
@@ -1643,7 +1680,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 break;
 
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
-                if (IsUnit(*itr))
+                if (IsCreature(*itr))
                     (*itr)->ToUnit()->SetUInt32Value(UNIT_NPC_FLAGS, e.action.unitFlag.flag);
 
             delete targets;
@@ -1656,7 +1693,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 break;
 
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
-                if (IsUnit(*itr))
+                if (IsCreature(*itr))
                     (*itr)->ToUnit()->SetFlag(UNIT_NPC_FLAGS, e.action.unitFlag.flag);
 
             delete targets;
@@ -1669,7 +1706,7 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
                 break;
 
             for (ObjectList::const_iterator itr = targets->begin(); itr != targets->end(); ++itr)
-                if (IsUnit(*itr))
+                if (IsCreature(*itr))
                     (*itr)->ToUnit()->RemoveFlag(UNIT_NPC_FLAGS, e.action.unitFlag.flag);
 
             delete targets;
