@@ -405,7 +405,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new boss_shade_of_akamaAI(creature);
+        return GetInstanceAI<boss_shade_of_akamaAI>(creature);
     }
 };
 
@@ -550,7 +550,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_akamaAI(creature);
+        return GetInstanceAI<npc_akamaAI>(creature);
     }
 };
 
@@ -622,7 +622,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_channelerAI(creature);
+        return GetInstanceAI<npc_ashtongue_channelerAI>(creature);
     }
 };
 
@@ -730,7 +730,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_creature_generator_akamaAI(creature);
+        return GetInstanceAI<npc_creature_generator_akamaAI>(creature);
     }
 };
 
@@ -748,6 +748,7 @@ public:
         npc_ashtongue_sorcererAI(Creature* creature) : ScriptedAI(creature)
         {
             instance = creature->GetInstanceScript();
+            startedBanishing = false;
         }
 
         void Reset() OVERRIDE
@@ -851,7 +852,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_sorcererAI(creature);
+        return GetInstanceAI<npc_ashtongue_sorcererAI>(creature);
     }
 };
 
@@ -941,7 +942,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_defenderAI(creature);
+        return GetInstanceAI<npc_ashtongue_defenderAI>(creature);
     }
 };
 
@@ -1021,7 +1022,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_rogueAI(creature);
+        return GetInstanceAI<npc_ashtongue_rogueAI>(creature);
     }
 };
 
@@ -1101,7 +1102,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_elementalistAI(creature);
+        return GetInstanceAI<npc_ashtongue_elementalistAI>(creature);
     }
 };
 
@@ -1198,7 +1199,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature) const OVERRIDE
     {
-        return new npc_ashtongue_spiritbinderAI(creature);
+        return GetInstanceAI<npc_ashtongue_spiritbinderAI>(creature);
     }
 };
 

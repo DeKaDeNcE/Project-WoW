@@ -245,7 +245,6 @@ class boss_anubarak_trial : public CreatureScript
 
             void JustSummoned(Creature* summoned) OVERRIDE
             {
-                Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true);
                 switch (summoned->GetEntry())
                 {
                     case NPC_BURROW:
@@ -255,9 +254,12 @@ class boss_anubarak_trial : public CreatureScript
                         summoned->SetDisplayId(summoned->GetCreatureTemplate()->Modelid2);
                         break;
                     case NPC_SPIKE:
-                        summoned->CombatStart(target);
                         summoned->SetDisplayId(summoned->GetCreatureTemplate()->Modelid1);
-                        Talk(EMOTE_SPIKE, target->GetGUID());
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
+                        {
+                            summoned->CombatStart(target);
+                            Talk(EMOTE_SPIKE, target);
+                        }
                         break;
                     default:
                         break;
@@ -423,7 +425,7 @@ class boss_anubarak_trial : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const OVERRIDE
         {
-            return new boss_anubarak_trialAI(creature);
+            return GetInstanceAI<boss_anubarak_trialAI>(creature);
         };
 };
 
@@ -495,7 +497,7 @@ class npc_swarm_scarab : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const OVERRIDE
         {
-            return new npc_swarm_scarabAI(creature);
+            return GetInstanceAI<npc_swarm_scarabAI>(creature);
         };
 };
 
@@ -583,7 +585,7 @@ class npc_nerubian_burrower : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const OVERRIDE
         {
-            return new npc_nerubian_burrowerAI(creature);
+            return GetInstanceAI<npc_nerubian_burrowerAI>(creature);
         };
 };
 
@@ -689,7 +691,7 @@ class npc_anubarak_spike : public CreatureScript
                 if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                 {
                     StartChase(target);
-                    Talk(EMOTE_SPIKE, who->GetGUID());
+                    Talk(EMOTE_SPIKE, who);
                 }
             }
 
@@ -719,7 +721,7 @@ class npc_anubarak_spike : public CreatureScript
                                 if (Unit* target2 = SelectTarget(SELECT_TARGET_RANDOM, 0, 0.0f, true))
                                 {
                                     StartChase(target2);
-                                    Talk(EMOTE_SPIKE, target2->GetGUID());
+                                    Talk(EMOTE_SPIKE, target2);
                                 }
                                 _phaseSwitchTimer = 7*IN_MILLISECONDS;
                                 return;
