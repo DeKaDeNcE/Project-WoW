@@ -165,7 +165,7 @@ Unit::Unit(bool isWorldObject) :
     IsAIEnabled(false), NeedChangeAI(false), LastCharmerGUID(0),
     m_ControlledByPlayer(false), movespline(new Movement::MoveSpline()),
     i_AI(NULL), i_disabledAI(NULL), m_AutoRepeatFirstCast(false), m_procDeep(0),
-    m_removedAurasCount(0), i_motionMaster(this), m_ThreatManager(this),
+    m_removedAurasCount(0), i_motionMaster(new MotionMaster(this)), m_regenTimer(0), m_ThreatManager(this),
     m_vehicle(NULL), m_vehicleKit(NULL), m_unitTypeMask(UNIT_MASK_NONE),
     m_HostileRefManager(this), _lastDamagedTime(0)
 {
@@ -240,8 +240,6 @@ Unit::Unit(bool isWorldObject) :
     for (uint8 i = 0; i < MAX_SPELL_SCHOOL; ++i)
         m_threatModifier[i] = 1.0f;
 
-    m_isSorted = true;
-
     for (uint8 i = 0; i < MAX_MOVE_TYPE; ++i)
         m_speed_rate[i] = 1.0f;
 
@@ -294,6 +292,7 @@ Unit::~Unit()
 
     _DeleteRemovedAuras();
 
+    delete i_motionMaster;
     delete m_charmInfo;
     delete movespline;
 
@@ -363,7 +362,7 @@ void Unit::Update(uint32 p_time)
     }
 
     UpdateSplineMovement(p_time);
-    i_motionMaster.UpdateMotion(p_time);
+    i_motionMaster->UpdateMotion(p_time);
 }
 
 bool Unit::haveOffhandWeapon() const
@@ -938,6 +937,8 @@ void Unit::CastSpell(GameObject* go, uint32 spellId, bool triggered, Item* castI
 uint32 Unit::SpellNonMeleeDamageLog(Unit* victim, uint32 spellID, uint32 damage)
 {
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID);
+    if (!spellInfo)
+        return 0;
     SpellNonMeleeDamage damageInfo(this, victim, spellInfo->Id, spellInfo->SchoolMask);
     damage = SpellDamageBonusDone(victim, spellInfo, damage, SPELL_DIRECT_DAMAGE);
     damage = victim->SpellDamageBonusTaken(this, spellInfo, damage, SPELL_DIRECT_DAMAGE);
@@ -10640,6 +10641,9 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
 
 void Unit::setDeathState(DeathState s)
 {
+    // Death state needs to be updated before RemoveAllAurasOnDeath() is called, to prevent entering combat
+    m_deathState = s;
+
     if (s != ALIVE && s != JUST_RESPAWNED)
     {
         CombatStop();
@@ -10688,8 +10692,6 @@ void Unit::setDeathState(DeathState s)
     }
     else if (s == JUST_RESPAWNED)
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE); // clear skinnable for creature and player (at battleground)
-
-    m_deathState = s;
 }
 
 /*########################################
@@ -10697,14 +10699,14 @@ void Unit::setDeathState(DeathState s)
 ########       AGGRO SYSTEM       ########
 ########                          ########
 ########################################*/
-bool Unit::CanHaveThreatList() const
+bool Unit::CanHaveThreatList(bool skipAliveCheck) const
 {
     // only creatures can have threat list
     if (GetTypeId() != TYPEID_UNIT)
         return false;
 
     // only alive units can have threat list
-    if (!IsAlive() || isDying())
+    if (!skipAliveCheck && !IsAlive())
         return false;
 
     // totems can not have threat list
@@ -10747,7 +10749,7 @@ void Unit::AddThreat(Unit* victim, float fThreat, SpellSchoolMask schoolMask, Sp
 
 void Unit::DeleteThreatList()
 {
-    if (CanHaveThreatList() && !m_ThreatManager.isThreatListEmpty())
+    if (CanHaveThreatList(true) && !m_ThreatManager.isThreatListEmpty())
         SendClearThreatListOpcode();
     m_ThreatManager.clearReferences();
 }
@@ -11839,8 +11841,8 @@ void Unit::DeleteCharmInfo()
 }
 
 CharmInfo::CharmInfo(Unit* unit)
-: _unit(unit), _CommandState(COMMAND_FOLLOW), _petnumber(0), _barInit(false),
-  _isCommandAttack(false), _isAtStay(false), _isFollowing(false), _isReturning(false),
+: _unit(unit), _CommandState(COMMAND_FOLLOW), _petnumber(0), _barInit(false), _oldReactState(REACT_PASSIVE),
+  _isCommandAttack(false), _isCommandFollow(false), _isAtStay(false), _isFollowing(false), _isReturning(false),
   _stayX(0.0f), _stayY(0.0f), _stayZ(0.0f)
 {
     for (uint8 i = 0; i < MAX_SPELL_CHARM; ++i)
@@ -11889,9 +11891,22 @@ void CharmInfo::InitEmptyActionBar(bool withAttack)
 
 void CharmInfo::InitPossessCreateSpells()
 {
-    InitEmptyActionBar();
     if (_unit->GetTypeId() == TYPEID_UNIT)
     {
+        // Adding switch until better way is found. Malcrom
+        // Adding entrys to this switch will prevent COMMAND_ATTACK being added to pet bar.
+        switch (_unit->GetEntry())
+        {
+            case 23575: // Mindless Abomination
+            case 24783: // Trained Rock Falcon
+            case 27664: // Crashin' Thrashin' Racer
+            case 40281: // Crashin' Thrashin' Racer
+                break;
+            default:
+                InitEmptyActionBar();
+                break;
+        }
+
         for (uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
         {
             uint32 spellId = _unit->ToCreature()->m_spells[i];
@@ -11905,6 +11920,8 @@ void CharmInfo::InitPossessCreateSpells()
             }
         }
     }
+    else
+        InitEmptyActionBar();
 }
 
 void CharmInfo::InitCharmCreateSpells()
@@ -12700,6 +12717,8 @@ void Unit::StopMoving()
     if (!IsInWorld() || movespline->Finalized())
         return;
 
+    // Update position now since Stop does not start a new movement that can be updated later
+    UpdateSplinePosition();
     Movement::MoveSplineInit init(this);
     init.Stop();
 }
@@ -14149,7 +14168,6 @@ void Unit::RemoveCharmedBy(Unit* charmer)
                     }
                 }
                 break;
-            default:
             case CHARM_TYPE_CONVERT:
                 break;
         }

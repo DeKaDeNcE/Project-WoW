@@ -35,7 +35,7 @@
 #include "Battleground.h"
 
 Vehicle::Vehicle(Unit* unit, VehicleEntry const* vehInfo, uint32 creatureEntry) :
-UsableSeatNum(0), _me(unit), _vehicleInfo(vehInfo), _creatureEntry(creatureEntry), _status(STATUS_NONE)
+UsableSeatNum(0), _me(unit), _vehicleInfo(vehInfo), _creatureEntry(creatureEntry), _status(STATUS_NONE), _lastShootPos()
 {
     for (uint32 i = 0; i < MAX_VEHICLE_SEATS; ++i)
     {
@@ -102,7 +102,7 @@ void Vehicle::Install()
                     if (!spellInfo)
                         continue;
 
-                    if (spellInfo->PowerType == POWER_ENERGY)
+                    if (spellInfo->PowerType == POWER_ENERGY && spellInfo->CalcPowerCost(_me, spellInfo->GetSchoolMask()) > 0)
                     {
                         _me->setPowerType(POWER_ENERGY);
                         _me->SetMaxPower(POWER_ENERGY, 100);
