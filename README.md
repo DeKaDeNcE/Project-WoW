@@ -18,3 +18,8 @@ Maxi_Repack (Not free) : Available all version ( 1.12.1 ; 2.4.3 ; 3.3.5 ; 4.3.4 
 If You need link Repack :: Contact - repack@reborns-project.fr
 
 Support English & French
+
+I sell Source code ( Core + Db + Extractor ) version 5.0.5 ( it's not JadeCore !! )
+I sell Source code ( Core + Db + Extractor ) version 5.4.7 ( Only 1 licences )
+
+For informations and prices, contact me.
