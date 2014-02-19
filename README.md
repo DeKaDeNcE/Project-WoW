@@ -15,7 +15,7 @@ Maxi_Repack Free : ( 1.12.1 ; 2.4.3 ; 3.3.5 ; 4.3.4 )
 Maxi_Repack (Not free) : Available all version ( 1.12.1 ; 2.4.3 ; 3.3.5 ; 4.3.4 ; 5.4.2 ) 
 - 6.x.x available alpha version : June 2014 - " Maxi_Repack (Not free) contains the source code "
 
-If You need link Repack :: Contact - repack@reborns-project.fr
+If You need link Repack :: Contact - Emustore@reborns-project.fr
 
 Support English & French
 
