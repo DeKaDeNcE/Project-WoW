@@ -19,7 +19,8 @@ If You need link Repack :: Contact - Emustore@reborns-project.fr
 
 Support English & French
 
-I sell Source code ( Core + Db + Extractor ) version 5.0.5 ( it's not JadeCore !! )
-I sell Source code ( Core + Db + Extractor ) version 5.4.7 ( Only 1 licences )
+- I sell Source code ( Core + Db + Extractor ) version 5.0.5 ( it's not JadeCore !! )
+
+- I sell Source code ( Core + Db + Extractor ) version 5.4.7 ( Only 1 licences )
 
 For informations and prices, contact me.
