@@ -5,17 +5,16 @@ World of Warcraft Emulator ( All version ) - Free developement -
 
 1.12.1 : Version Final - Don't updated
 2.4.3 : Version Final - Don't updated
-3.3.5a : Version Final - Update / 3 Month
-4.3.4 : Version Final - Update / 3 Month
-5.4.2 : Version Final - Not Update - Only on Repack
-6.x.x : Alpha Version - Dont available - Only on repack
+3.3.5a : Version Final - Don't updated
+4.0.6 : Version Final - Don't updated
+4.3.4 : Version Final - Don't updated
+5.4.2 : Version Final - Don't updated
+5.4.7 : Beta version -  Don't available for the moment
+6.x.x : Alpha Version - Don't available for the moment ( PTR )
 
-Maxi_Repack Free : ( 1.12.1 ; 2.4.3 ; 3.3.5 ; 4.3.4 )
 
-Maxi_Repack (Not free) : Available all version ( 1.12.1 ; 2.4.3 ; 3.3.5 ; 4.3.4 ; 5.4.2 ) 
-- 6.x.x available alpha version : June 2014 - " Maxi_Repack (Not free) contains the source code "
 
-If You need link Repack :: Contact - Emustore@reborns-project.fr
+For selling original and fully version Contact me !! - Emustore@reborns-project.fr -
 
 Support English & French
 
@@ -24,3 +23,4 @@ Support English & French
 - I sell Source code ( Core + Db + Extractor ) version 5.4.7 ( Only 1 licences )
 
 For informations and prices, contact me.
+	- Emustore@reborns-project.fr -
