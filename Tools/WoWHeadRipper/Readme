@@ -1,0 +1,6 @@
+This is a tool which parses data from Wowhead...
+
+Thanks to:
+* Sovak
+* Chameleo - for parser example
+* LordJZ - DBFilesClient.NET library (DBC/DB2 loading)
